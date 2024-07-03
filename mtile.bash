@@ -29,11 +29,15 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 
 
 
+# Apply defaults to env variables
+: ${SPLIT_DEPTH:=1}
+: ${DISPLAY_SEG_WIDTH:=2}
+: ${DISPLAY_SEG_HEIGHT:=2}
+
+
+
 # Declare globals
 display_count=0
-DISPLAY_SEG_WIDTH=2
-DISPLAY_SEG_HEIGHT=2
-SPLIT_DEPTH=1
 config_dir=${CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}
 [[ -d $config_dir ]] || print_stderr 1 '%s\n' 'bad config directory'
 [[ -f $config_dir'/mtile.bash/shims' ]] && source -- "${config_dir}/mtile.bash/shims"
