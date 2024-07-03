@@ -133,11 +133,11 @@ handle_panel() {
 
 	tile_width=$(( panel[width] / PANEL_SEG_WIDTH ))
 	tile_height=$(( panel[height] / PANEL_SEG_HEIGHT ))
-	tile_x_global=$(( ( mouse[x] / tile_width ) * tile_width ))
-	tile_y_global=$(( ( mouse[y] / tile_height ) * tile_height ))
+	tile_x=$(( ( ( mouse[x] - panel[x] ) / tile_width ) * tile_width ))
+	tile_y=$(( ( ( mouse[y] - panel[y] ) / tile_height ) * tile_height ))
 
-	tile_x=$(( tile_x_global - panel[x] ))
-	tile_y=$(( tile_y_global - panel[y] ))
+	tile_x_global=$(( tile_x + panel[x] ))
+	tile_y_global=$(( tile_y + panel[y] ))
 	tile_x2=$(( tile_x + tile_width ))
 	tile_y2=$(( tile_y + tile_height ))
 
