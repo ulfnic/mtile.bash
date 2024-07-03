@@ -174,6 +174,13 @@ handle_panel() {
 		tile_height=${panel[height]}
 
 
+	elif (( mouse_x > ( panel[width] / 2 ) - zone_size && mouse_x < ( panel[width] / 2 ) + ( zone_size * 2 ) )); then
+		# Moat mode
+		tile_x_global=$(( tile_x_global - tile_x ))
+		tile_x=0
+		tile_width=${panel[width]}
+
+
 	elif [[ $IS_ROOT ]]; then
 		local -A sub_panel=(
 			[width]=$tile_width
