@@ -33,6 +33,7 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 display_count=0
 DISPLAY_SEG_WIDTH=2
 DISPLAY_SEG_HEIGHT=2
+SPLIT_DEPTH=1
 config_dir=${CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}
 [[ -d $config_dir ]] || print_stderr 1 '%s\n' 'bad config directory'
 [[ -f $config_dir'/mtile.bash/shims' ]] && source -- "${config_dir}/mtile.bash/shims"
@@ -181,7 +182,7 @@ handle_panel() {
 		tile_width=${panel[width]}
 
 
-	elif [[ $IS_ROOT ]]; then
+	elif (( SPLIT_DEPTH-- > 0 )); then
 		local -A sub_panel=(
 			[width]=$tile_width
 			[height]=$tile_height
@@ -203,6 +204,7 @@ move_window() {
 
 	PANEL_SEG_WIDTH=$DISPLAY_SEG_WIDTH \
 	PANEL_SEG_HEIGHT=$DISPLAY_SEG_HEIGHT \
+	SPLIT_DEPTH=$SPLIT_DEPTH \
 	IS_ROOT=1 \
 		handle_panel 'active_display'
 
