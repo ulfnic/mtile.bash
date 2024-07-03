@@ -25,7 +25,7 @@ printf '%s' "$PID" > "$block_path"
 
 
 
-type xdotool xrandr 1>/dev/null
+type xprop xrandr wmctrl xdotool 1>/dev/null
 
 
 
