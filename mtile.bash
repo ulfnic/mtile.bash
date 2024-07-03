@@ -243,6 +243,10 @@ move_window() {
 	fi
 
 
+	# Remove maximize attributes to insure the window is moveable by xdotool
+	wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
+
+
 	xdotool getactivewindow windowsize %@ "$tile_width" "$tile_height" windowmove %@ "$tile_x_global" "$tile_y_global"
 	sleep 0.001
 	xdotool getactivewindow windowsize %@ "$tile_width" "$tile_height" windowmove %@ "$tile_x_global" "$tile_y_global"
