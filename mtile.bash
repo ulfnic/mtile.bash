@@ -36,19 +36,28 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 
 
 
-# Apply defaults to env variables
-: ${SPLIT_DEPTH:=1}
-: ${DISPLAY_COLUMNS:=2}
-: ${DISPLAY_ROWS:=2}
-: ${EDGE_PROXIMITY_SIZE:=30}
-: ${CORNER_PROXIMITY_SIZE:=$EDGE_PROXIMITY_SIZE}
-: ${DISABLE_DOCUMENT_MODE:=}
-
-
-
-# Declare globals
+# Declare global variables and defaults
 display_count=0
 config_dir=${CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}
+SPLIT_DEPTH=1
+DISPLAY_COLUMNS=2
+DISPLAY_ROWS=2
+EDGE_PROXIMITY_SIZE=30
+CORNER_PROXIMITY_SIZE=$EDGE_PROXIMITY_SIZE
+DISABLE_DOCUMENT_MODE=
+
+
+
+# Apply environment variables
+[[ $MTILE_BASH__SPLIT_DEPTH ]] && SPLIT_DEPTH=$MTILE_BASH__SPLIT_DEPTH
+[[ $MTILE_BASH__DISPLAY_COLUMNS ]] && DISPLAY_COLUMNS=$MTILE_BASH__DISPLAY_COLUMNS
+[[ $MTILE_BASH__DISPLAY_ROWS ]] && DISPLAY_ROWS=$MTILE_BASH__DISPLAY_ROWS
+[[ $MTILE_BASH__EDGE_PROXIMITY_SIZE ]] && EDGE_PROXIMITY_SIZE=$MTILE_BASH__EDGE_PROXIMITY_SIZE
+[[ $MTILE_BASH__CORNER_PROXIMITY_SIZE ]] && CORNER_PROXIMITY_SIZE=$MTILE_BASH__CORNER_PROXIMITY_SIZE
+[[ $MTILE_BASH__DISABLE_DOCUMENT_MODE ]] && DISABLE_DOCUMENT_MODE=$MTILE_BASH__DISABLE_DOCUMENT_MODE
+
+
+
 [[ -d $config_dir ]] || print_stderr 1 '%s\n' 'bad config directory'
 [[ -f $config_dir'/mtile.bash/shims' ]] && source -- "${config_dir}/mtile.bash/shims"
 
