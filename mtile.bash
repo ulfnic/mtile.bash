@@ -48,6 +48,12 @@ DISABLE_DOCUMENT_MODE=
 
 
 
+# Source configuration and overwrite defaults
+[[ -d $config_dir ]] || print_stderr 1 '%s\n' 'bad config directory'
+[[ -f $config_dir'/mtile.bash/shims' ]] && source -- "${config_dir}/mtile.bash/shims"
+
+
+
 # Apply environment variables
 [[ $MTILE_BASH__SPLIT_DEPTH ]] && SPLIT_DEPTH=$MTILE_BASH__SPLIT_DEPTH
 [[ $MTILE_BASH__DISPLAY_COLUMNS ]] && DISPLAY_COLUMNS=$MTILE_BASH__DISPLAY_COLUMNS
@@ -55,11 +61,6 @@ DISABLE_DOCUMENT_MODE=
 [[ $MTILE_BASH__EDGE_PROXIMITY_SIZE ]] && EDGE_PROXIMITY_SIZE=$MTILE_BASH__EDGE_PROXIMITY_SIZE
 [[ $MTILE_BASH__CORNER_PROXIMITY_SIZE ]] && CORNER_PROXIMITY_SIZE=$MTILE_BASH__CORNER_PROXIMITY_SIZE
 [[ $MTILE_BASH__DISABLE_DOCUMENT_MODE ]] && DISABLE_DOCUMENT_MODE=$MTILE_BASH__DISABLE_DOCUMENT_MODE
-
-
-
-[[ -d $config_dir ]] || print_stderr 1 '%s\n' 'bad config directory'
-[[ -f $config_dir'/mtile.bash/shims' ]] && source -- "${config_dir}/mtile.bash/shims"
 
 
 
