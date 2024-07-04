@@ -171,10 +171,11 @@ handle_area() {
 
 	if [[ $IS_ROOT && ! $DISABLE_DOCUMENT_MODE ]] && (( mouse_y < 100 )); then
 		# Document mode
-
-		# Center on x-axis
-		tile_x=$(( ( area[width] / 2 ) - ( tile_width / 2 ) ))
-		tile_x_global=$(( area[x] + tile_x ))
+		if (( mouse_x > ( area[width] / 3 ) && mouse_x < ( area[width] - ( area[width] / 3 ) ) )); then
+			# Center on x-axis
+			tile_x=$(( ( area[width] / 2 ) - ( tile_width / 2 ) ))
+			tile_x_global=$(( area[x] + tile_x ))
+		fi
 
 		# Fill vertical
 		tile_y_global=$(( tile_y_global - tile_y ))
