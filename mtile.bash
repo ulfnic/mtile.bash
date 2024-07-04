@@ -32,6 +32,7 @@ fi
 
 
 
+# Check dependencies
 type xprop xrandr wmctrl xdotool 1>/dev/null
 
 
@@ -168,13 +169,14 @@ handle_area() {
 	mouse_y=$(( mouse[y] - area[y] ))
 
 
-	# === Special Rules ===
 	if [[ $IS_ROOT && ! $DISABLE_DOCUMENT_MODE ]] && (( mouse_y < 100 )); then
+		# Document mode
+
 		# Center on x-axis
 		tile_x=$(( ( area[width] / 2 ) - ( tile_width / 2 ) ))
 		tile_x_global=$(( area[x] + tile_x ))
 
-		# Tower mode
+		# Fill vertical
 		tile_y_global=$(( tile_y_global - tile_y ))
 		tile_y=0
 		tile_height=$(( area[height] ))
@@ -183,7 +185,7 @@ handle_area() {
 	elif \
 		(( mouse_y > ( area[height] / 2 ) - CORNER_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + CORNER_PROXIMITY_SIZE )) && \
 		(( mouse_x > (  area[width] / 2 ) - CORNER_PROXIMITY_SIZE && mouse_x < (  area[width] / 2 ) + CORNER_PROXIMITY_SIZE )); then
-		# Full screen
+		# Fill area
 		tile_x_global=$(( tile_x_global - tile_x ))
 		tile_x=0
 		tile_width=${area[width]}
@@ -193,14 +195,14 @@ handle_area() {
 
 
 	elif (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + EDGE_PROXIMITY_SIZE )); then
-		# Tower mode
+		# Fill vertical
 		tile_y_global=$(( tile_y_global - tile_y ))
 		tile_y=0
 		tile_height=${area[height]}
 
 
 	elif (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + EDGE_PROXIMITY_SIZE )); then
-		# Moat mode
+		# Fill horizontal
 		tile_x_global=$(( tile_x_global - tile_x ))
 		tile_x=0
 		tile_width=${area[width]}
@@ -223,6 +225,7 @@ handle_area() {
 }
 
 
+
 move_window() {
 	local -n 'display=active_display'
 
@@ -238,7 +241,7 @@ move_window() {
 	tile_height=$(( tile_height - window[dec_height] ))
 
 
-	# Enforce margins
+	# Resize tiles that overlap with margins
 	if [[ $MARGIN_LEFT ]]; then
 		left_overage=$(( tile_x_global - ( display[x] + MARGIN_LEFT ) ))
 		if (( left_overage < 0 )); then
@@ -266,6 +269,7 @@ move_window() {
 	fi
 
 
+	# Call shim if present
 	declare -F move_window__shim 1>/dev/null && move_window__shim
 
 
