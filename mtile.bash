@@ -34,6 +34,7 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 : ${DISPLAY_COLUMNS:=2}
 : ${DISPLAY_ROWS:=2}
 : ${EDGE_PROXIMITY_SIZE:=30}
+: ${CORNER_PROXIMITY_SIZE:=$EDGE_PROXIMITY_SIZE}
 : ${DISABLE_DOCUMENT_MODE:=}
 
 
@@ -162,14 +163,19 @@ handle_area() {
 		tile_height=$(( area[height] ))
 
 
-	elif (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + EDGE_PROXIMITY_SIZE )); then
-		if (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + EDGE_PROXIMITY_SIZE )); then
-			# Full screen
-			tile_x_global=$(( tile_x_global - tile_x ))
-			tile_x=0
-			tile_width=${area[width]}
-		fi
+	elif \
+		(( mouse_y > ( area[height] / 2 ) - CORNER_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + CORNER_PROXIMITY_SIZE )) && \
+		(( mouse_x > (  area[width] / 2 ) - CORNER_PROXIMITY_SIZE && mouse_x < (  area[width] / 2 ) + CORNER_PROXIMITY_SIZE )); then
+		# Full screen
+		tile_x_global=$(( tile_x_global - tile_x ))
+		tile_x=0
+		tile_width=${area[width]}
+		tile_y_global=$(( tile_y_global - tile_y ))
+		tile_y=0
+		tile_height=${area[height]}
 
+
+	elif (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + EDGE_PROXIMITY_SIZE )); then
 		# Tower mode
 		tile_y_global=$(( tile_y_global - tile_y ))
 		tile_y=0
