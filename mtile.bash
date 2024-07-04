@@ -161,8 +161,8 @@ handle_area() {
 		tile_height=$(( area[height] ))
 
 
-	elif (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + ( EDGE_PROXIMITY_SIZE * 2 ) )); then
-		if (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + ( EDGE_PROXIMITY_SIZE * 2 ) )); then
+	elif (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + EDGE_PROXIMITY_SIZE )); then
+		if (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + EDGE_PROXIMITY_SIZE )); then
 			# Full screen
 			tile_x_global=$(( tile_x_global - tile_x ))
 			tile_x=0
@@ -175,7 +175,7 @@ handle_area() {
 		tile_height=${area[height]}
 
 
-	elif (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + ( EDGE_PROXIMITY_SIZE * 2 ) )); then
+	elif (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + EDGE_PROXIMITY_SIZE )); then
 		# Moat mode
 		tile_x_global=$(( tile_x_global - tile_x ))
 		tile_x=0
