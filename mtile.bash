@@ -31,8 +31,8 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 
 # Apply defaults to env variables
 : ${SPLIT_DEPTH:=1}
-: ${DISPLAY_SEG_WIDTH:=2}
-: ${DISPLAY_SEG_HEIGHT:=2}
+: ${DISPLAY_COLUMNS:=2}
+: ${DISPLAY_ROWS:=2}
 
 
 
@@ -127,67 +127,67 @@ ref_active_display() {
 
 
 
-handle_panel() {
+handle_area() {
 	# exports: tile_x_global tile_y_global tile_width tile_height
 
-	local -n "panel=$1"
+	local -n "area=$1"
 	local \
 		tile_x tile_y tile_x2 tile_y2 mouse_x mouse_y \
-		zone_size
+		edge_poximity_size
 
 
-	tile_width=$(( panel[width] / PANEL_SEG_WIDTH ))
-	tile_height=$(( panel[height] / PANEL_SEG_HEIGHT ))
-	tile_x=$(( ( ( mouse[x] - panel[x] ) / tile_width ) * tile_width ))
-	tile_y=$(( ( ( mouse[y] - panel[y] ) / tile_height ) * tile_height ))
+	tile_width=$(( area[width] / AREA_COLUMNS ))
+	tile_height=$(( area[height] / AREA_ROWS ))
+	tile_x=$(( ( ( mouse[x] - area[x] ) / tile_width ) * tile_width ))
+	tile_y=$(( ( ( mouse[y] - area[y] ) / tile_height ) * tile_height ))
 
-	tile_x_global=$(( tile_x + panel[x] ))
-	tile_y_global=$(( tile_y + panel[y] ))
+	tile_x_global=$(( tile_x + area[x] ))
+	tile_y_global=$(( tile_y + area[y] ))
 	tile_x2=$(( tile_x + tile_width ))
 	tile_y2=$(( tile_y + tile_height ))
 
-	mouse_x=$(( mouse[x] - panel[x] ))
-	mouse_y=$(( mouse[y] - panel[y] ))
+	mouse_x=$(( mouse[x] - area[x] ))
+	mouse_y=$(( mouse[y] - area[y] ))
 
 
 	# === Special Rules ===
-	zone_size=30
+	edge_poximity_size=30
 
 
 	if [[ $IS_ROOT ]] && (( mouse_y < 100 )); then
 		# Center on x-axis
-		tile_x=$(( ( panel[width] / 2 ) - ( tile_width / 2 ) ))
-		tile_x_global=$(( panel[x] + tile_x ))
+		tile_x=$(( ( area[width] / 2 ) - ( tile_width / 2 ) ))
+		tile_x_global=$(( area[x] + tile_x ))
 
 		# Tower mode
 		tile_y_global=$(( tile_y_global - tile_y ))
 		tile_y=0
-		tile_height=$(( panel[height] ))
+		tile_height=$(( area[height] ))
 
 
-	elif (( mouse_y > ( panel[height] / 2 ) - zone_size && mouse_y < ( panel[height] / 2 ) + ( zone_size * 2 ) )); then
-		if (( mouse_x > ( panel[width] / 2 ) - zone_size && mouse_x < ( panel[width] / 2 ) + ( zone_size * 2 ) )); then
+	elif (( mouse_y > ( area[height] / 2 ) - edge_poximity_size && mouse_y < ( area[height] / 2 ) + ( edge_poximity_size * 2 ) )); then
+		if (( mouse_x > ( area[width] / 2 ) - edge_poximity_size && mouse_x < ( area[width] / 2 ) + ( edge_poximity_size * 2 ) )); then
 			# Full screen
 			tile_x_global=$(( tile_x_global - tile_x ))
 			tile_x=0
-			tile_width=${panel[width]}
+			tile_width=${area[width]}
 		fi
 
 		# Tower mode
 		tile_y_global=$(( tile_y_global - tile_y ))
 		tile_y=0
-		tile_height=${panel[height]}
+		tile_height=${area[height]}
 
 
-	elif (( mouse_x > ( panel[width] / 2 ) - zone_size && mouse_x < ( panel[width] / 2 ) + ( zone_size * 2 ) )); then
+	elif (( mouse_x > ( area[width] / 2 ) - edge_poximity_size && mouse_x < ( area[width] / 2 ) + ( edge_poximity_size * 2 ) )); then
 		# Moat mode
 		tile_x_global=$(( tile_x_global - tile_x ))
 		tile_x=0
-		tile_width=${panel[width]}
+		tile_width=${area[width]}
 
 
 	elif (( SPLIT_DEPTH-- > 0 )); then
-		local -A sub_panel=(
+		local -A sub_area=(
 			[width]=$tile_width
 			[height]=$tile_height
 			[x]=$tile_x_global
@@ -195,10 +195,10 @@ handle_panel() {
 			[x2]=$(( tile_width + tile_x_global ))
 			[y2]=$(( tile_height + tile_y_global ))
 		)
-		PANEL_SEG_WIDTH=2 \
-		PANEL_SEG_HEIGHT=2 \
+		AREA_COLUMNS=2 \
+		AREA_ROWS=2 \
 		IS_ROOT= \
-			handle_panel 'sub_panel'
+			handle_area 'sub_area'
 	fi
 }
 
@@ -206,11 +206,11 @@ handle_panel() {
 move_window() {
 	local -n 'display=active_display'
 
-	PANEL_SEG_WIDTH=$DISPLAY_SEG_WIDTH \
-	PANEL_SEG_HEIGHT=$DISPLAY_SEG_HEIGHT \
+	AREA_COLUMNS=$DISPLAY_COLUMNS \
+	AREA_ROWS=$DISPLAY_ROWS \
 	SPLIT_DEPTH=$SPLIT_DEPTH \
 	IS_ROOT=1 \
-		handle_panel 'active_display'
+		handle_area 'active_display'
 
 
 	# Remove decoration skew
