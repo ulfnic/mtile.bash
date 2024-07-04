@@ -14,14 +14,21 @@ print_stderr() {
 
 
 
-# Enforce single running instance
-instance_hold_sec=0.05
-temp_dir=${TMPDIR:-${XDG_RUNTIME_DIR:-/tmp}}
-[[ -d $temp_dir ]] || mkdir --mode 0700 -p "$temp_dir"
-block_path=$temp_dir"/mtile.bash__block_${USER}"
-[[ -f $block_path ]] && print_stderr 1 'instance already running: '"$(<$block_path)"
-trap 'sleep "$instance_hold_sec"; rm -- "$block_path"' EXIT
-printf '%s' "$PID" > "$block_path"
+if [[ ! $MTILE_BASH__DISABLE_DAEMON_MODE ]]; then
+	temp_dir=${TMPDIR:-${XDG_RUNTIME_DIR:-/tmp}}
+	fifo_path=$temp_dir"/mtile.bash__signal_${USER}"
+
+	# If an instance is already running, signal it to call activate again and exit early
+	if [[ -p $fifo_path ]]; then
+		printf '1' > "$fifo_path"
+		exit
+	fi
+
+	# Create a named pipe to listen for subsequent script activations
+	[[ -d $temp_dir ]] || mkdir --mode 0700 -p -- "$temp_dir"
+	mkfifo --mode 0600 -- "$fifo_path"
+	trap "[[ -e $fifo_path ]] && rm -f -- ${fifo_path@Q}" EXIT
+fi
 
 
 
@@ -270,10 +277,27 @@ move_window() {
 
 
 
+activate() {
+	# Define ephemeral stats and move window
+	set_mouse_stats; ref_active_display
+	set_window_stats
+	move_window
+}
+
+
+
+# Define permanent stats and call activate
 set_display_stats
-set_mouse_stats; ref_active_display
-set_window_stats
-move_window
+activate
+
+
+
+if [[ ! $MTILE_BASH__DISABLE_DAEMON_MODE ]]; then
+	# Call activate for every script activcation that occurs within 1 second of last activation
+	while read -n 1 -t 1 <> "$fifo_path"; do
+		activate
+	done
+fi
 
 
 
