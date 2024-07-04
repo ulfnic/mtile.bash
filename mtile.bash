@@ -33,6 +33,7 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 : ${SPLIT_DEPTH:=1}
 : ${DISPLAY_COLUMNS:=2}
 : ${DISPLAY_ROWS:=2}
+: ${EDGE_PROXIMITY_SIZE:=30}
 
 
 
@@ -131,9 +132,7 @@ handle_area() {
 	# exports: tile_x_global tile_y_global tile_width tile_height
 
 	local -n "area=$1"
-	local \
-		tile_x tile_y tile_x2 tile_y2 mouse_x mouse_y \
-		edge_poximity_size
+	local tile_x tile_y tile_x2 tile_y2 mouse_x mouse_y
 
 
 	tile_width=$(( area[width] / AREA_COLUMNS ))
@@ -151,9 +150,6 @@ handle_area() {
 
 
 	# === Special Rules ===
-	edge_poximity_size=30
-
-
 	if [[ $IS_ROOT ]] && (( mouse_y < 100 )); then
 		# Center on x-axis
 		tile_x=$(( ( area[width] / 2 ) - ( tile_width / 2 ) ))
@@ -165,8 +161,8 @@ handle_area() {
 		tile_height=$(( area[height] ))
 
 
-	elif (( mouse_y > ( area[height] / 2 ) - edge_poximity_size && mouse_y < ( area[height] / 2 ) + ( edge_poximity_size * 2 ) )); then
-		if (( mouse_x > ( area[width] / 2 ) - edge_poximity_size && mouse_x < ( area[width] / 2 ) + ( edge_poximity_size * 2 ) )); then
+	elif (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + ( EDGE_PROXIMITY_SIZE * 2 ) )); then
+		if (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + ( EDGE_PROXIMITY_SIZE * 2 ) )); then
 			# Full screen
 			tile_x_global=$(( tile_x_global - tile_x ))
 			tile_x=0
@@ -179,7 +175,7 @@ handle_area() {
 		tile_height=${area[height]}
 
 
-	elif (( mouse_x > ( area[width] / 2 ) - edge_poximity_size && mouse_x < ( area[width] / 2 ) + ( edge_poximity_size * 2 ) )); then
+	elif (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + ( EDGE_PROXIMITY_SIZE * 2 ) )); then
 		# Moat mode
 		tile_x_global=$(( tile_x_global - tile_x ))
 		tile_x=0
