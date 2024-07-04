@@ -34,6 +34,7 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 : ${DISPLAY_COLUMNS:=2}
 : ${DISPLAY_ROWS:=2}
 : ${EDGE_PROXIMITY_SIZE:=30}
+: ${DISABLE_DOCUMENT_MODE:=}
 
 
 
@@ -150,7 +151,7 @@ handle_area() {
 
 
 	# === Special Rules ===
-	if [[ $IS_ROOT ]] && (( mouse_y < 100 )); then
+	if [[ $IS_ROOT && ! $DISABLE_DOCUMENT_MODE ]] && (( mouse_y < 100 )); then
 		# Center on x-axis
 		tile_x=$(( ( area[width] / 2 ) - ( tile_width / 2 ) ))
 		tile_x_global=$(( area[x] + tile_x ))
