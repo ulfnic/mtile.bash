@@ -14,6 +14,10 @@ print_stderr() {
 
 
 
+(( BASH_VERSINFO[0] < 4 || ( BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3 ) )) && print_stderr 1 '%s\n' 'BASH version required >= 4.3 (released 2014)'
+
+
+
 if [[ ! $MTILE_BASH__DISABLE_DAEMON_MODE ]]; then
 	temp_dir=${TMPDIR:-${XDG_RUNTIME_DIR:-/tmp}}
 	fifo_path=$temp_dir"/mtile.bash__signal_${USER}"
