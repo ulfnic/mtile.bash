@@ -290,8 +290,6 @@ move_window() {
 
 
 	xdotool getactivewindow windowsize %@ "$tile_width" "$tile_height" windowmove %@ "$tile_x_global" "$tile_y_global"
-	sleep 0.001
-	xdotool getactivewindow windowsize %@ "$tile_width" "$tile_height" windowmove %@ "$tile_x_global" "$tile_y_global"
 }
 
 
@@ -316,7 +314,14 @@ if [[ ! $MTILE_BASH__DISABLE_DAEMON_MODE ]]; then
 	while read -n 1 -t 1 <> "$fifo_path"; do
 		activate
 	done
+else
+	sleep 0.001
 fi
+
+
+
+# Double-set window size to enforce correct dimensions
+xdotool getactivewindow windowsize %@ "$tile_width" "$tile_height"
 
 
 
