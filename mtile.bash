@@ -88,6 +88,11 @@ set_display_stats() {
 		display[x2]=$(( display[x] + display[width] ))
 		display[y2]=$(( display[y] + display[height] ))
 
+		if [[ $MTILE_BASH__DUMP_STATS ]]; then
+			for prop in "${!display[@]}"; do
+				printf '%s%q\n' "display_${display_id}[${prop}]=" "${display[$prop]}"
+			done
+		fi
 	done < <(xrandr | grep ' connected ')
 }
 
@@ -102,6 +107,12 @@ set_mouse_stats() {
 		val=${valpair#*=}
 		mouse["${name,,}"]=$val
 	done
+
+	if [[ $MTILE_BASH__DUMP_STATS ]]; then
+		for prop in "${!mouse[@]}"; do
+			printf '%s%q\n' "mouse[${prop}]=" "${mouse[$prop]}"
+		done
+	fi
 }
 
 
@@ -136,6 +147,13 @@ set_window_stats() {
 		window[dec_width]=0
 		window[dec_height]=0
 	fi
+
+
+	if [[ $MTILE_BASH__DUMP_STATS ]]; then
+		for prop in "${!window[@]}"; do
+			printf '%s%q\n' "window[${prop}]=" "${window[$prop]}"
+		done
+	fi
 }
 
 
@@ -148,6 +166,10 @@ ref_active_display() {
 			break
 		fi
 	done
+
+	if [[ $MTILE_BASH__DUMP_STATS ]]; then
+		printf '%s%q\n' "active_display=" "display_${display_id}"
+	fi
 }
 
 
