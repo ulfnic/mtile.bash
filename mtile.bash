@@ -300,18 +300,9 @@ move_window() {
 	declare -F move_window__shim 1>/dev/null && move_window__shim
 
 
-	if [[ $tile_width == ${window[width]} && $tile_height == ${window[height]} ]]; then
-		[[ $tile_x_global == ${window[x]} && $tile_y_global == ${window[y]} ]] && return 0
-		xdotool getactivewindow windowmove %@ "$tile_x_global" "$tile_y_global"
-		return $?
-	fi
-
-
-	# Remove maximize attributes to insure the window is moveable by xdotool
+	# Move window after removing attributes that prevent moving
 	wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
-
-
-	xdotool getactivewindow windowsize %@ "$tile_width" "$tile_height" windowmove %@ "$tile_x_global" "$tile_y_global"
+	wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
 }
 
 
@@ -336,14 +327,7 @@ if [[ ! $MTILE_BASH__DISABLE_DAEMON_MODE ]]; then
 	while read -n 1 -t 1 <> "$fifo_path"; do
 		activate
 	done
-else
-	sleep 0.001
 fi
-
-
-
-# Double-set window size to enforce correct dimensions
-xdotool getactivewindow windowsize %@ "$tile_width" "$tile_height"
 
 
 
