@@ -42,6 +42,7 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 
 
 # Declare global variables and defaults
+declare -A window=()
 display_count=0
 config_dir=${CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}
 SPLIT_DEPTH=1
@@ -118,34 +119,40 @@ set_mouse_stats() {
 
 
 set_window_stats() {
-	declare -gA window=()
-
-
 	local -a valpairs=($(xdotool getactivewindow getwindowname getwindowgeometry --shell))
 	for valpair in "${valpairs[@]}"; do
 		[[ $valpair == *'='* ]] || continue
 		name=${valpair%%=*}
+		name=${name,,}
 		val=${valpair#*=}
-		window["${name,,}"]=$val
+		if [[ $name == 'window' ]] && [[ $val != ${window[window]} ]]; then
+			window[__offset_x]=
+			window[__offset_y]=
+		fi
+		window["$name"]=$val
 	done
 
 
-	window_xprop_str=$'\n'$( xprop -id "${window[window]}" ) || print_stderr 1 '%s\n' 'failed to run xprop for window id: '"${window[window]}"
+	# Only fetch decorations if they haven't been fetched before
+	if [[ ! ${window[__offset_x]} ]]; then
+		window_xprop_str=$'\n'$( xprop -id "${window[window]}" ) || print_stderr 1 '%s\n' 'failed to run xprop for window id: '"${window[window]}"
 
 
-	# Error if the window type is wrong and there is a window type
-	if [[ $window_xprop_str != *$'\n''_NET_WM_WINDOW_TYPE(ATOM) = _NET_WM_WINDOW_TYPE_NORMAL'* ]]; then
-		[[ $window_xprop_str == *$'\n''_NET_WM_WINDOW_TYPE(ATOM) = '* ]] && print_stderr 1 '%s\n' 'if attribute _NET_WM_WINDOW_TYPE(ATOM) exists in xprop output, value must = _NET_WM_WINDOW_TYPE_NORMAL'
-	fi
+		# Error if the window type is wrong and there is a window type
+		if [[ $window_xprop_str != *$'\n''_NET_WM_WINDOW_TYPE(ATOM) = _NET_WM_WINDOW_TYPE_NORMAL'* ]]; then
+			[[ $window_xprop_str == *$'\n''_NET_WM_WINDOW_TYPE(ATOM) = '* ]] && print_stderr 1 '%s\n' 'if attribute _NET_WM_WINDOW_TYPE(ATOM) exists in xprop output, value must = _NET_WM_WINDOW_TYPE_NORMAL'
+		fi
 
 
-	re=$'\n''_NET_FRAME_EXTENTS\(CARDINAL\) = ([0-9]*), ([0-9]*), ([0-9]*), ([0-9]*)'
-	if [[ $window_xprop_str =~ $re ]]; then
-		window[dec_width]=$(( BASH_REMATCH[1] + BASH_REMATCH[2] ))
-		window[dec_height]=$(( BASH_REMATCH[3] + BASH_REMATCH[4] ))
-	else
-		window[dec_width]=0
-		window[dec_height]=0
+		re=$'\n''_NET_FRAME_EXTENTS\(CARDINAL\) = ([0-9]*), ([0-9]*), ([0-9]*), ([0-9]*)'
+		if [[ $window_xprop_str =~ $re ]]; then
+			window[dec_top]=${BASH_REMATCH[3]}
+			window[dec_width]=$(( BASH_REMATCH[1] + BASH_REMATCH[2] ))
+			window[dec_height]=$(( BASH_REMATCH[3] + BASH_REMATCH[4] ))
+		else
+			window[dec_width]=0
+			window[dec_height]=0
+		fi
 	fi
 
 
@@ -300,9 +307,36 @@ move_window() {
 	declare -F move_window__shim 1>/dev/null && move_window__shim
 
 
-	# Move window after removing attributes that prevent moving
+	# Removing maximized attributes that prevent window  movement
 	wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
-	wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
+
+
+	# If this is the first time seeing the window, move it and set it's xy offset relative to where it should have moved
+	if [[ ! ${window[__offset_x]} ]]; then
+		wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
+
+		set_window_stats
+
+		window[__offset_x]=$(( ( $tile_x_global + ${window[dec_width]} ) - ${window[x]} ))
+		window[__offset_y]=$(( ( $tile_y_global + ${window[dec_top]} + ${window[dec_top]} ) - ${window[y]} ))
+
+		# Return early if window is where it should be
+		[[ ${window[__offset_x]} == '0' && ${window[__offset_y]} == '0' ]] && return 0
+	fi
+
+
+	# Move and resize window if it's not the right size or position
+	if [[ \
+		$tile_width != ${window[width]} || \
+		$tile_height != ${window[height]} || \
+		$tile_x_global != $(( ${window[x]} - ${window[dec_width]} )) || \
+		$tile_y_global != $(( ${window[y]} - ( ${window[dec_top]} * 2 ) )) \
+	]]; then
+		tile_x_global=$(( tile_x_global + ${window[__offset_x]} ))
+		tile_y_global=$(( tile_y_global + ${window[__offset_y]} ))
+
+		wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
+	fi
 }
 
 
