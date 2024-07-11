@@ -51,6 +51,8 @@ DISPLAY_ROWS=2
 EDGE_PROXIMITY_SIZE=30
 CORNER_PROXIMITY_SIZE=$EDGE_PROXIMITY_SIZE
 DISABLE_DOCUMENT_MODE=
+# Include dump stats in verbosity
+[[ $MTILE_BASH__VERBOSE ]] && MTILE_BASH__DUMP_STATS=1
 
 
 
@@ -67,6 +69,16 @@ DISABLE_DOCUMENT_MODE=
 [[ $MTILE_BASH__EDGE_PROXIMITY_SIZE ]] && EDGE_PROXIMITY_SIZE=$MTILE_BASH__EDGE_PROXIMITY_SIZE
 [[ $MTILE_BASH__CORNER_PROXIMITY_SIZE ]] && CORNER_PROXIMITY_SIZE=$MTILE_BASH__CORNER_PROXIMITY_SIZE
 [[ $MTILE_BASH__DISABLE_DOCUMENT_MODE ]] && DISABLE_DOCUMENT_MODE=$MTILE_BASH__DISABLE_DOCUMENT_MODE
+
+
+
+run_cmd() {
+	if [[ $MTILE_BASH__VERBOSE ]]; then
+		print_stderr 0 '%s ' "$@"
+		print_stderr 0 '\n'
+	fi
+	"$@"
+}
 
 
 
@@ -101,7 +113,7 @@ set_display_stats() {
 
 set_mouse_stats() {
 	declare -gA mouse=()
-	local -a valpairs=($(xdotool getmouselocation --shell))
+	local -a valpairs=($( run_cmd xdotool getmouselocation --shell ))
 	for valpair in "${valpairs[@]}"; do
 		[[ $valpair == *'='* ]] || continue
 		name=${valpair%%=*}
@@ -119,7 +131,7 @@ set_mouse_stats() {
 
 
 set_window_stats() {
-	local -a valpairs=($(xdotool getactivewindow getwindowname getwindowgeometry --shell))
+	local -a valpairs=($( run_cmd xdotool getactivewindow getwindowname getwindowgeometry --shell ))
 	for valpair in "${valpairs[@]}"; do
 		[[ $valpair == *'='* ]] || continue
 		name=${valpair%%=*}
@@ -135,7 +147,7 @@ set_window_stats() {
 
 	# Only fetch decorations if they haven't been fetched before
 	if [[ ! ${window[__offset_x]} ]]; then
-		window_xprop_str=$'\n'$( xprop -id "${window[window]}" ) || print_stderr 1 '%s\n' 'failed to run xprop for window id: '"${window[window]}"
+		window_xprop_str=$'\n'$( run_cmd xprop -id "${window[window]}" ) || print_stderr 1 '%s\n' 'failed to run xprop for window id: '"${window[window]}"
 
 
 		# Error if the window type is wrong and there is a window type
@@ -262,6 +274,8 @@ handle_area() {
 
 move_window() {
 	local -n 'display=active_display'
+	local -a cmd
+
 
 	AREA_COLUMNS=$DISPLAY_COLUMNS \
 	AREA_ROWS=$DISPLAY_ROWS \
@@ -308,12 +322,12 @@ move_window() {
 
 
 	# Removing maximized attributes that prevent window  movement
-	wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
+	run_cmd wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
 
 
 	# If this is the first time seeing the window, move it and set it's xy offset relative to where it should have moved
 	if [[ ! ${window[__offset_x]} ]]; then
-		wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
+		run_cmd wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
 
 		set_window_stats
 
@@ -335,7 +349,7 @@ move_window() {
 		tile_x_global=$(( tile_x_global + ${window[__offset_x]} ))
 		tile_y_global=$(( tile_y_global + ${window[__offset_y]} ))
 
-		wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
+		run_cmd wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
 	fi
 }
 
