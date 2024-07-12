@@ -24,7 +24,8 @@ if [[ ! $MTILE_BASH__DISABLE_DAEMON_MODE ]]; then
 
 	# If an instance is already running, signal it to call activate again and exit early
 	if [[ -p $fifo_path ]]; then
-		printf '1' > "$fifo_path"
+		exec 3<>"$fifo_path"
+		printf '1' > /dev/fd/3
 		exit
 	fi
 
