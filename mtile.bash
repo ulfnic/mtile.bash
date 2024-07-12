@@ -83,6 +83,15 @@ run_cmd() {
 
 
 
+set_epoch_microseconds() {
+	EPOCH_MICROSECONDS=${EPOCHREALTIME/.}
+	if [[ ! $EPOCH_MICROSECONDS ]]; then
+		EPOCH_MICROSECONDS=$(( $(date +%s%N) / 1000 ))
+	fi
+}
+
+
+
 set_display_stats() {
 	local \
 		remainder_re='(^|[ 	])([0123456789]+)x([0123456789]+)\+([0123456789]+)\+([0123456789]+)([ 	]|$)' \
@@ -342,6 +351,7 @@ move_window() {
 	if [[ ! ${window[__offset_x]} ]]; then
 		# Create position offsets relative to where the window should be to hangle programs that position before or after decorations
 		run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_mvarg"
+
 		set_window_stats
 		window[__offset_x]=$(( ( $tile_x_global + ${window[dec_width]} ) - ${window[x]} ))
 		window[__offset_y]=$(( ( $tile_y_global + ${window[dec_top]} + ${window[dec_top]} ) - ${window[y]} ))
@@ -358,7 +368,7 @@ move_window() {
 
 
 	# Correct the position and size of the window repeatedly for a set period to handle resizing race conditions
-	move_window__enforcer & disown -h %1
+	move_window__enforcer & # <= note: do not use disown, creates phantom issues under heavy load
 	move_window__enforcer__pid=$!
 }
 
@@ -375,9 +385,9 @@ move_window__set_offset_mvarg() {
 
 move_window__enforcer() {	
 	target_window_id=${window[window]}
-	now=${EPOCHREALTIME/.}
-	next_tick_epoch_us=$now
-	end_epoch_us=$(( now + 100000 )) # end loop in 0.1 seconds
+	set_epoch_microseconds
+	next_tick_epoch_us=$EPOCH_MICROSECONDS
+	end_epoch_us=$(( EPOCH_MICROSECONDS + 100000 )) # end loop in 0.1 seconds
 	tick_us=10000 # tick every .01 seconds
 	while :; do
 		next_tick_epoch_us=$(( next_tick_epoch_us + tick_us ))
@@ -397,7 +407,8 @@ move_window__enforcer() {
 
 
 		# Handle time to next tick
-		sleep_for_us=$(( next_tick_epoch_us - ${EPOCHREALTIME/.} ))
+		set_epoch_microseconds
+		sleep_for_us=$(( next_tick_epoch_us - EPOCH_MICROSECONDS ))
 		(( sleep_for_us <= 0 )) && continue
 		printf -v sleep_for_us "%06d" "$sleep_for_us"
 		sleep_for_s=${sleep_for_us:0:-6}'.'${sleep_for_us: -6}
