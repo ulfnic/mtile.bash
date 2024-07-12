@@ -141,6 +141,7 @@ set_window_stats() {
 		if [[ $name == 'window' ]] && [[ $val != ${window[window]} ]]; then
 			window[__offset_x]=
 			window[__offset_y]=
+			window[__last_mvarg]=
 		fi
 		window["$name"]=$val
 	done
@@ -322,36 +323,91 @@ move_window() {
 	declare -F move_window__shim 1>/dev/null && move_window__shim
 
 
-	# Removing maximized attributes that prevent window  movement
+	# Perform window move and resize if wmctrl mvarg is different from last activation
+	wmctrl_mvarg="0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
+	[[ $wmctrl_mvarg == ${window['__last_mvarg']} ]] && return 0
+	window['__last_mvarg']=$wmctrl_mvarg
+
+
+	if [[ $move_window__enforcer__pid ]]; then
+		kill "$move_window__enforcer__pid" &> /dev/null || :
+		wait
+	fi
+
+
+	# Remove maximized attributed that prevent window movement
 	run_cmd wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
 
 
-	# If this is the first time seeing the window, move it and set it's xy offset relative to where it should have moved
 	if [[ ! ${window[__offset_x]} ]]; then
-		run_cmd wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
-
+		# Create position offsets relative to where the window should be to hangle programs that position before or after decorations
+		run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_mvarg"
 		set_window_stats
-
 		window[__offset_x]=$(( ( $tile_x_global + ${window[dec_width]} ) - ${window[x]} ))
 		window[__offset_y]=$(( ( $tile_y_global + ${window[dec_top]} + ${window[dec_top]} ) - ${window[y]} ))
 
-		# Return early if window is where it should be
-		[[ ${window[__offset_x]} == '0' && ${window[__offset_y]} == '0' ]] && return 0
+		move_window__set_offset_mvarg
+		if [[ $wmctrl_mvarg != "$wmctrl_offset_mvarg" ]]; then
+			run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_offset_mvarg"
+		fi
+
+	else
+		move_window__set_offset_mvarg
+		run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_offset_mvarg"
 	fi
 
 
-	# Move and resize window if it's not the right size or position
-	if [[ \
-		$tile_width != ${window[width]} || \
-		$tile_height != ${window[height]} || \
-		$tile_x_global != $(( ${window[x]} - ${window[dec_width]} )) || \
-		$tile_y_global != $(( ${window[y]} - ( ${window[dec_top]} * 2 ) )) \
-	]]; then
-		tile_x_global=$(( tile_x_global + ${window[__offset_x]} ))
-		tile_y_global=$(( tile_y_global + ${window[__offset_y]} ))
+	# Correct the position and size of the window repeatedly for a set period to handle resizing race conditions
+	move_window__enforcer & disown -h %1
+	move_window__enforcer__pid=$!
+}
 
-		run_cmd wmctrl -r :ACTIVE: -e "0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
-	fi
+
+
+move_window__set_offset_mvarg() {
+	# Create offset version of wmctrl mvarg
+	tile_x_global=$(( tile_x_global + ${window[__offset_x]} ))
+	tile_y_global=$(( tile_y_global + ${window[__offset_y]} ))
+	wmctrl_offset_mvarg="0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
+}
+
+
+
+move_window__enforcer() {	
+	target_window_id=${window[window]}
+	now=${EPOCHREALTIME/.}
+	next_tick_epoch_us=$now
+	end_epoch_us=$(( now + 100000 )) # end loop in 0.1 seconds
+	tick_us=10000 # tick every .01 seconds
+	while :; do
+		next_tick_epoch_us=$(( next_tick_epoch_us + tick_us ))
+
+
+		# Move and resize window if it's stats are incorrect
+		if [[ \
+			${window[width]} != "$tile_width" || \
+			${window[height]} != "$tile_height" || \
+			$(( ${window[x]} - ${window[dec_width]} )) != "$tile_x_global" || \
+			$(( ${window[y]} - ( ${window[dec_top]} * 2 ) )) != "$tile_y_global" \
+		]]; then
+			run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_offset_mvarg"
+		fi
+
+		(( next_tick_epoch_us >= end_epoch_us )) && break
+
+
+		# Handle time to next tick
+		sleep_for_us=$(( next_tick_epoch_us - ${EPOCHREALTIME/.} ))
+		(( sleep_for_us <= 0 )) && continue
+		printf -v sleep_for_us "%06d" "$sleep_for_us"
+		sleep_for_s=${sleep_for_us:0:-6}'.'${sleep_for_us: -6}
+		sleep "$sleep_for_s"
+
+
+		# Refresh window stats and ensure window id hasn't changed
+		set_window_stats
+		[[ ${window[window]} == "$target_window_id" ]] || break
+	done
 }
 
 
