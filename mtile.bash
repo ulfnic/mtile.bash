@@ -160,6 +160,10 @@ set_window_stats() {
 
 	# Only fetch decorations if they haven't been fetched before
 	if [[ ! ${window[__offset_x]} ]]; then
+		# Remove maximized attributes as they prevent moving the window and reading decoration sizes aside from top
+		run_cmd wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
+
+
 		window_xprop_str=$'\n'$( run_cmd xprop -id "${window[window]}" ) || print_stderr 1 '%s\n' 'failed to run xprop for window id: '"${window[window]}"
 
 
@@ -344,10 +348,6 @@ move_window() {
 		kill "$move_window__enforcer__pid" &> /dev/null || :
 		wait
 	fi
-
-
-	# Remove maximized attributed that prevent window movement
-	run_cmd wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
 
 
 	if [[ ! ${window[__offset_x]} ]]; then
