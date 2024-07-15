@@ -150,8 +150,6 @@ set_window_stats() {
 		name=${name,,}
 		val=${valpair#*=}
 		if [[ $name == 'window' ]] && [[ $val != ${window[window]} ]]; then
-			window[__offset_x]=
-			window[__offset_y]=
 			window[__last_mvarg]=
 		fi
 		window["$name"]=$val
@@ -159,7 +157,7 @@ set_window_stats() {
 
 
 	# Only fetch decorations if they haven't been fetched before
-	if [[ ! ${window[__offset_x]} ]]; then
+	if [[ ! ${window[__last_mvarg]} ]]; then
 		# Remove maximized attributes as they prevent moving the window and reading decoration sizes aside from top
 		run_cmd wmctrl -r :ACTIVE: -b remove,maximized_vert,maximized_horz
 
@@ -339,7 +337,7 @@ move_window() {
 
 
 	# Perform window move and resize if wmctrl mvarg is different from last activation
-	wmctrl_mvarg="0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
+	wmctrl_mvarg="1,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
 	[[ $wmctrl_mvarg == ${window['__last_mvarg']} ]] && return 0
 	window['__last_mvarg']=$wmctrl_mvarg
 
@@ -350,37 +348,12 @@ move_window() {
 	fi
 
 
-	if [[ ! ${window[__offset_x]} ]]; then
-		# Create position offsets relative to where the window should be to hangle programs that position before or after decorations
-		run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_mvarg"
-
-		set_window_stats
-		window[__offset_x]=$(( ( $tile_x_global + ${window[dec_width]} ) - ${window[x]} ))
-		window[__offset_y]=$(( ( $tile_y_global + ${window[dec_top]} + ${window[dec_top]} ) - ${window[y]} ))
-
-		move_window__set_offset_mvarg
-		if [[ $wmctrl_mvarg != "$wmctrl_offset_mvarg" ]]; then
-			run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_offset_mvarg"
-		fi
-
-	else
-		move_window__set_offset_mvarg
-		run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_offset_mvarg"
-	fi
+	run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_mvarg"
 
 
 	# Correct the position and size of the window repeatedly for a set period to handle resizing race conditions
 	move_window__enforcer & # <= note: do not use disown, creates phantom issues under heavy load
 	move_window__enforcer__pid=$!
-}
-
-
-
-move_window__set_offset_mvarg() {
-	# Create offset version of wmctrl mvarg
-	tile_x_global=$(( tile_x_global + ${window[__offset_x]} ))
-	tile_y_global=$(( tile_y_global + ${window[__offset_y]} ))
-	wmctrl_offset_mvarg="0,${tile_x_global},${tile_y_global},${tile_width},${tile_height}"
 }
 
 
@@ -402,7 +375,7 @@ move_window__enforcer() {
 			$(( ${window[x]} - ${window[dec_width]} )) != "$tile_x_global" || \
 			$(( ${window[y]} - ( ${window[dec_top]} * 2 ) )) != "$tile_y_global" \
 		]]; then
-			run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_offset_mvarg"
+			run_cmd wmctrl -r :ACTIVE: -e "$wmctrl_mvarg"
 		fi
 
 		(( next_tick_epoch_us >= end_epoch_us )) && break
