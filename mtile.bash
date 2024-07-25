@@ -47,6 +47,7 @@ type xprop xrandr wmctrl xdotool 1>/dev/null
 # Declare global variables and defaults
 declare -A window=()
 display_count=0
+vdisplay_count=0
 config_dir=${CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}}
 SPLIT_DEPTH=1
 DISPLAY_COLUMNS=2
@@ -89,6 +90,27 @@ set_epoch_microseconds() {
 	EPOCH_MICROSECONDS=${EPOCHREALTIME/.}
 	if [[ ! $EPOCH_MICROSECONDS ]]; then
 		EPOCH_MICROSECONDS=$(( $(date +%s%N) / 1000 ))
+	fi
+}
+
+
+
+add_vdisplay() {
+	vdisplay_id=$(( ++vdisplay_count ))
+	declare -gA "vdisplay_${vdisplay_id}=()"
+	local -n "vdisplay=vdisplay_${vdisplay_id}"
+
+	vdisplay[x]=$1
+	vdisplay[y]=$2
+	vdisplay[width]=$3
+	vdisplay[height]=$4
+	vdisplay[x2]=$(( vdisplay[x] + vdisplay[width] ))
+	vdisplay[y2]=$(( vdisplay[y] + vdisplay[height] ))
+
+	if [[ $MTILE_BASH__DUMP_STATS ]]; then
+		for prop in "${!display[@]}"; do
+			printf '%s%q\n' "display_${display_id}[${prop}]=" "${display[$prop]}"
+		done
 	fi
 }
 
@@ -207,13 +229,30 @@ set_window_stats() {
 
 
 ref_active_display() {
-	for (( display_id=$display_count; display_id > 0; display_id-- )) do
-		local -n "display=display_${display_id}"
+	local display_set vdisplay_id display_id
+
+	try_display() {
 		if (( mouse[x] >= display[x] && mouse[x] <= display[x2] )) && (( mouse[y] >= display[y] && mouse[y] <= display[y2] )); then
-			declare -gn "active_display=display_${display_id}"
-			break
+			declare -gn "active_display=${!display}"
+			display_set=1
+			return 0
 		fi
-	done
+		return 1
+	}
+
+	if [[ $vdisplay_id != '0' ]]; then
+		for (( vdisplay_id=$vdisplay_count; vdisplay_id > 0; vdisplay_id-- )) do
+			local -n "display=vdisplay_${vdisplay_id}"
+			try_display && break
+		done
+	fi
+
+	if [[ ! $display_set ]]; then
+		for (( display_id=$display_count; display_id > 0; display_id-- )) do
+			local -n "display=display_${display_id}"
+			try_display && break
+		done
+	fi
 
 	if [[ $MTILE_BASH__DUMP_STATS ]]; then
 		printf '%s%q\n' "active_display=" "display_${display_id}"
