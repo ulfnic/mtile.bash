@@ -144,6 +144,8 @@ set_mouse_stats() {
 
 set_window_stats() {
 	local -a valpairs=($( run_cmd xdotool getactivewindow getwindowname getwindowgeometry --shell ))
+	window[name]=${valpairs[0]}
+	unset valpairs[0]
 	for valpair in "${valpairs[@]}"; do
 		[[ $valpair == *'='* ]] || continue
 		name=${valpair%%=*}
