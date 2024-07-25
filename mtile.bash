@@ -421,6 +421,11 @@ activate() {
 
 
 
+# Call init shim if present
+declare -F pre_activation__shim 1>/dev/null && pre_activation__shim
+
+
+
 # Define permanent stats and call activate
 set_display_stats
 activate
