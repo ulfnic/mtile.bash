@@ -96,16 +96,28 @@ set_epoch_microseconds() {
 
 set_display_stats() {
 	local \
-		remainder_re='(^|[ 	])([0123456789]+)x([0123456789]+)\+([0123456789]+)\+([0123456789]+)([ 	]|$)' \
-		name state remainder dimensions_re x y offset_x offset_y display_id
+		display_re='^([^ 	]+)[ 	][^ 	]+[ 	]([0123456789]+)x([0123456789]+)\+([0123456789]+)\+([0123456789]+)([ 	]|$)' \
+		IFS noglob_set line display_id
 
-	while read -r name state remainder; do
-		[[ $remainder =~ $remainder_re ]] || print_stderr 1 'failed to read dimensions of display: '"$name"
+
+	# Read xrandr into a newline deliminated array
+	shopt -q -o noglob && noglob_set=1
+	[[ $noglob_set ]] || set -f
+	IFS=$'\n'
+	local -a xrandr_arr=( $(xrandr) )
+	IFS=$' \t\n'
+	[[ $noglob_set ]] || set +f
+
+
+	for line in "${xrandr_arr[@]}"; do
+		[[ $line == *' connected '* ]] || continue
+		[[ $line =~ $display_re ]] || print_stderr 1 'failed to read display properties: '"$line"
 
 		display_id=$(( ++display_count ))
 		declare -gA "display_${display_id}=()"
 		local -n "display=display_${display_id}"
-		display[name]=$name
+
+		display[name]=${BASH_REMATCH[1]}
 		display[width]=${BASH_REMATCH[2]}
 		display[height]=${BASH_REMATCH[3]}
 		display[x]=${BASH_REMATCH[4]}
@@ -118,7 +130,7 @@ set_display_stats() {
 				printf '%s%q\n' "display_${display_id}[${prop}]=" "${display[$prop]}"
 			done
 		fi
-	done < <(xrandr | grep ' connected ')
+	done
 }
 
 
