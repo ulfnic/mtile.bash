@@ -133,7 +133,10 @@ set_display_stats() {
 
 	for line in "${xrandr_arr[@]}"; do
 		[[ $line == *' connected '* ]] || continue
-		[[ $line =~ $display_re ]] || print_stderr 1 'failed to read display properties: '"$line"
+		if [[ ! $line =~ $display_re ]]; then
+			print_stderr 0 'failed to read display properties: '"$line"
+			continue
+		fi
 
 		display_id=$(( ++display_count ))
 		declare -gA "display_${display_id}=()"
