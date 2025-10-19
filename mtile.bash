@@ -294,9 +294,12 @@ handle_area() {
 		tile_y_global=$(( tile_y_global - tile_y ))
 		tile_y=0
 		tile_height=$(( area[height] ))
+		return
+	fi
 
 
-	elif \
+	# Fill area if mouse is center
+	if \
 		(( mouse_y > ( area[height] / 2 ) - CORNER_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + CORNER_PROXIMITY_SIZE )) && \
 		(( mouse_x > (  area[width] / 2 ) - CORNER_PROXIMITY_SIZE && mouse_x < (  area[width] / 2 ) + CORNER_PROXIMITY_SIZE )); then
 		# Fill area
@@ -306,23 +309,41 @@ handle_area() {
 		tile_y_global=$(( tile_y_global - tile_y ))
 		tile_y=0
 		tile_height=${area[height]}
+		return
+	fi
 
 
-	elif (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + EDGE_PROXIMITY_SIZE )); then
-		# Fill vertical
-		tile_y_global=$(( tile_y_global - tile_y ))
-		tile_y=0
-		tile_height=${area[height]}
+	if [[ $IS_ROOT ]]; then
+		if (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + EDGE_PROXIMITY_SIZE )); then
+			tile_y=$(( ( area[height] / 2 ) - ( tile_height / 2 ) ))
+			tile_y_global=$(( area[y] + tile_y ))
+		fi
 
 
-	elif (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + EDGE_PROXIMITY_SIZE )); then
-		# Fill horizontal
-		tile_x_global=$(( tile_x_global - tile_x ))
-		tile_x=0
-		tile_width=${area[width]}
+		if (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + EDGE_PROXIMITY_SIZE )); then
+			tile_x=$(( ( area[width] / 2 ) - ( tile_width / 2 ) ))
+			tile_x_global=$(( area[x] + tile_x ))
+		fi
 
 
-	elif (( SPLIT_DEPTH-- > 0 )); then
+	else
+		if (( mouse_y > ( area[height] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_y < ( area[height] / 2 ) + EDGE_PROXIMITY_SIZE )); then
+			# Fill vertical
+			tile_y_global=$(( tile_y_global - tile_y ))
+			tile_y=0
+			tile_height=${area[height]}
+
+
+		elif (( mouse_x > ( area[width] / 2 ) - EDGE_PROXIMITY_SIZE && mouse_x < ( area[width] / 2 ) + EDGE_PROXIMITY_SIZE )); then
+			# Fill horizontal
+			tile_x_global=$(( tile_x_global - tile_x ))
+			tile_x=0
+			tile_width=${area[width]}
+		fi
+	fi
+
+
+	if (( SPLIT_DEPTH-- > 0 )); then
 		local -A sub_area=(
 			[width]=$tile_width
 			[height]=$tile_height
