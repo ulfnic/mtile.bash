@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# License: GNU Affero General Public License Version 3 (GNU AGPLv3), (c) 2024, Marc Gilligan <marcg@ulfnic.com>
 set -o errexit
 
 
